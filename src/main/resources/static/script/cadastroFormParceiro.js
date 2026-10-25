@@ -149,12 +149,10 @@ function formularioParceiros() {
                     alternarCamposParceiro();
                 },
                 error: function (xhr) {
-                    let msg = xhr.responseText;
-                    try {
-                        const json = JSON.parse(xhr.responseText);
-                        msg = json.detail || json.body || xhr.responseText;
-                    } catch (e) {}
-                    avisar("Erro ao cadastrar: " + msg, "erro");
+                    // CPF ou e-mail já cadastrado: a mensagem aparece também embaixo do campo
+                    $("#formulario-membros").validate().showErrors(
+                        errosDosCampos(xhr, { cpf: 'cpf_parceiro', email: 'email_parceiro' }));
+                    avisar("Erro ao cadastrar: " + mensagemDoServidor(xhr, "tente novamente."), "erro");
                 }
             });
         },

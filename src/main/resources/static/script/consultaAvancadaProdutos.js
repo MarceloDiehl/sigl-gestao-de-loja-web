@@ -124,7 +124,7 @@ function inicializarConsultaAvancadaProdutos() {
         })
         .fail(function (xhr) {
             $btnConfirmar.prop('disabled', false);
-            avisar("Erro ao excluir produto: " + xhr.responseText, "erro");
+            avisar("Erro ao excluir produto: " + mensagemDoServidor(xhr, "tente novamente."), "erro");
         });
     });
 
@@ -165,7 +165,7 @@ function inicializarConsultaAvancadaProdutos() {
             carregarProdutos();
         })
         .fail(function(xhr) {
-            avisar("Erro ao atualizar produto: " + xhr.responseText, "erro");
+            avisar("Erro ao atualizar produto: " + mensagemDoServidor(xhr, "tente novamente."), "erro");
         });
     });
 

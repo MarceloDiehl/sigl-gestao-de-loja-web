@@ -1,6 +1,6 @@
 package com.sigl.sigl.exception;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
@@ -15,26 +15,36 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+/**
+ * Todos os erros de regra e de validação saem no formato ProblemDetail (RFC 9457), com a mensagem
+ * em "detail". Quando o erro é de um campo, vai também "campos": {"quantidade": "A quantidade não
+ * pode ser negativa."}, com os nomes do JSON enviado; a tela usa esse mapa para marcar cada campo.
+ */
 @ControllerAdvice
 public class ValidationHandler extends ResponseEntityExceptionHandler {
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        Map<String, String> campos = new LinkedHashMap<>();
+        for (FieldError erro : ex.getBindingResult().getFieldErrors()) {
+            campos.putIfAbsent(erro.getField(), erro.getDefaultMessage());
+        }
 
-        Map<String, String> errors = new HashMap<>();
-
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String message = error.getDefaultMessage();
-            errors.put(fieldName, message);
-        });
-
-        return new ResponseEntity<Object>(errors, HttpStatus.BAD_REQUEST);
+        String detalhe = campos.size() == 1
+                ? campos.values().iterator().next()
+                : "Corrija os campos indicados.";
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detalhe);
+        problema.setProperty("campos", campos);
+        return ResponseEntity.badRequest().body(problema);
     }
 
-    // Resposta no formato ProblemDetail (RFC 9457): {"status": 409, "detail": "Só há 1 unidade..."}
+    // {"status": 409, "detail": "Só há 1 unidade..."}; com campo: {"detail": ..., "campos": {"cpf": ...}}
     @ExceptionHandler(RegraDeNegocioException.class)
     public ProblemDetail handleRegraDeNegocio(RegraDeNegocioException ex) {
-        return ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
+        if (ex.getCampo() != null) {
+            problema.setProperty("campos", Map.of(ex.getCampo(), ex.getMessage()));
+        }
+        return problema;
     }
 }

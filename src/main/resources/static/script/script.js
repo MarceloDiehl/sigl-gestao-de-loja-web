@@ -80,8 +80,8 @@ function escaparHtml(valor) {
     return String(valor ?? '').replace(/[&<>"']/g, c => entidades[c]);
 }
 
-// Mensagem de erro de uma resposta da API: ProblemDetail ({detail}), mapa de validação ({campo: msg})
-// ou texto simples. Página de erro em HTML ou resposta vazia viram a mensagem padrão.
+// Mensagem de erro de uma resposta da API: ProblemDetail ({detail}) ou texto simples.
+// Página de erro em HTML ou resposta vazia viram a mensagem padrão.
 function mensagemDoServidor(xhr, padrao) {
     let corpo = xhr.responseJSON;
     if (!corpo) {
@@ -89,12 +89,22 @@ function mensagemDoServidor(xhr, padrao) {
     }
     if (corpo && corpo.detail) return corpo.detail;
     if (corpo && corpo.message) return corpo.message;   // erro padrão do Spring
-    if (corpo && typeof corpo === 'object') {
-        const primeira = Object.values(corpo).find(v => typeof v === 'string');
-        if (primeira) return primeira;
-    }
     const texto = (xhr.responseText || '').trim();
     return texto && !texto.startsWith('<') && texto.length < 300 ? texto : padrao;
+}
+
+// Erros por campo de uma resposta da API ({campos: {cpf: "Já existe..."}}), já com os nomes dos
+// campos do formulário: nomes é o de-para {campoDoJson: nameDoInput}. Campo fora do de-para fica de fora.
+function errosDosCampos(xhr, nomes) {
+    let corpo = xhr.responseJSON;
+    if (!corpo) {
+        try { corpo = JSON.parse(xhr.responseText); } catch (e) { corpo = null; }
+    }
+    const erros = {};
+    Object.entries((corpo && corpo.campos) || {}).forEach(([campo, mensagem]) => {
+        if (nomes[campo]) erros[nomes[campo]] = mensagem;
+    });
+    return erros;
 }
 
 // Tabelas de apoio (tipos, condições, cargos, escolaridades, gêneros, formas de pagamento) vêm do banco

@@ -117,32 +117,16 @@ function formularioProduto() {
                 $mensagemFeedback.addClass('alert alert-success').text(msg + (response.id ? ' ID: ' + response.id : ''));
                 if (!codigoParam) limparFormulario(); // Limpa apenas se for cadastro
             })
-            .fail(function(xhr, status, error) {
-                let errorMessage = 'Erro ao salvar produto. Verifique os dados e tente novamente.';
-                if (xhr.status === 409) {
-                    errorMessage = xhr.responseText || 'Já existe um produto com este código.';
-                    $form.validate().showErrors({ 'codigo-produto': errorMessage });
-                } else if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.errors) {
-                    let backendErrors = {};
-                    xhr.responseJSON.errors.forEach(err => {
-                        const fieldName = err.field;
-                        let htmlFieldName = '';
-                        if (fieldName === 'codProduto') htmlFieldName = 'codigo-produto';
-                        else if (fieldName === 'titulo') htmlFieldName = 'titulo-produto';
-                        else if (fieldName === 'descricao') htmlFieldName = 'descricao-produto';
-                        else if (fieldName === 'valor') htmlFieldName = 'valor-produto';
-                        else if (fieldName === 'quantidade') htmlFieldName = 'quantidade-produto';
-                        else if (fieldName === 'entrada') htmlFieldName = 'data-produto';
-                        else if (fieldName === 'idTipo') htmlFieldName = 'tipo';
-                        else if (fieldName === 'idCondicao') htmlFieldName = 'condicao';
-                        else htmlFieldName = fieldName;
-                        backendErrors[htmlFieldName] = err.defaultMessage;
-                    });
-                    $form.validate().showErrors(backendErrors);
-                    errorMessage = 'Por favor, corrija os erros indicados no formulário.';
-                } else if (xhr.responseText) {
-                    errorMessage = xhr.responseText;
-                }
+            .fail(function(xhr) {
+                const errorMessage = mensagemDoServidor(xhr, 'Erro ao salvar produto. Verifique os dados e tente novamente.');
+                // campos recusados pelo servidor (nome no JSON -> name do input) ficam marcados no formulário
+                const erros = errosDosCampos(xhr, {
+                    codProduto: 'codigo-produto', titulo: 'titulo-produto', descricao: 'descricao-produto',
+                    valor: 'valor-produto', quantidade: 'quantidade-produto', entrada: 'data-produto',
+                    idTipo: 'tipo', idCondicao: 'condicao'
+                });
+                if (xhr.status === 409 && !codigoParam) erros['codigo-produto'] = errorMessage;   // código repetido
+                $form.validate().showErrors(erros);
                 $mensagemFeedback.addClass('alert alert-danger').text(errorMessage);
             });
         }

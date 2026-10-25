@@ -167,7 +167,7 @@ function inicializarConsultaMembros(containerSelector) {
             carregarMembros($inputCpf.val().trim());
         })
         .fail(function (xhr) {
-            avisar("Erro ao excluir: " + xhr.responseText, "erro");
+            avisar("Erro ao excluir: " + mensagemDoServidor(xhr, "tente novamente."), "erro");
         });
         });
     });
