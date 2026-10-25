@@ -1,19 +1,18 @@
 package com.sigl.sigl.controller;
 
+import com.sigl.sigl.dto.ProdutoAtualizacao;
 import com.sigl.sigl.model.Produto;
 import com.sigl.sigl.repository.ItemVendaRepository;
 import com.sigl.sigl.repository.ProdutoRepository;
 import com.sigl.sigl.service.ProdutoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/produtos")
@@ -79,31 +78,9 @@ public class ProdutoController {
     }
 
     @PutMapping("/{codProduto}")
-    public ResponseEntity<?> atualizarProduto(
-            @PathVariable String codProduto,
-            @RequestBody Produto produtoAtualizado) {
-
-        Optional<Produto> optProduto = produtoRepository.findByCodProduto(codProduto);
-        if (!optProduto.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Produto não encontrado");
-        }
-
-        Produto produtoExistente = optProduto.get();
-
-        if (produtoAtualizado.getQuantidade() != null) {
-            produtoExistente.setQuantidade(produtoAtualizado.getQuantidade());
-        }
-        if (produtoAtualizado.getValor() != null) {
-            produtoExistente.setValor(produtoAtualizado.getValor());
-        }
-
-        try {
-            Produto salvo = produtoRepository.save(produtoExistente);
-            return ResponseEntity.ok(salvo);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro ao atualizar o produto: " + e.getMessage());
-        }
+    public Produto atualizarProduto(@PathVariable String codProduto,
+                                    @Valid @RequestBody ProdutoAtualizacao alteracao) {
+        // campos inválidos (400) e produto inexistente (404) saem como ProblemDetail pelo ValidationHandler
+        return produtoService.atualizar(codProduto, alteracao);
     }
 }

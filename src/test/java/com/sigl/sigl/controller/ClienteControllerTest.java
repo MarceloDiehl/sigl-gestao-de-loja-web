@@ -1,5 +1,6 @@
 package com.sigl.sigl.controller;
 
+import com.sigl.sigl.exception.RegraDeNegocioException;
 import com.sigl.sigl.model.Cliente;
 import com.sigl.sigl.model.apoio.Cargo;
 import com.sigl.sigl.repository.ClienteRepository;
@@ -10,17 +11,22 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -106,5 +112,17 @@ class ClienteControllerTest {
                 .andExpect(jsonPath("$[0].cpf").value("529.982.247-25"));
         verify(clienteRepository).findByCpfContaining("529.98");
         verify(clienteRepository, never()).findAll();
+    }
+
+    @Test
+    @DisplayName("CPF repetido: 409 com o campo cpf, para a tela marcar o campo")
+    void cadastrar_CpfRepetido_DevolveCampo() throws Exception {
+        when(clienteService.salvar(any())).thenThrow(
+                new RegraDeNegocioException(HttpStatus.CONFLICT, "Já existe um cliente com este CPF.", "cpf"));
+
+        mockMvc.perform(post("/api/clientes").with(csrf()).with(user(VENDEDOR))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"cpf\": \"529.982.247-25\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.campos.cpf").value("Já existe um cliente com este CPF."));
     }
 }

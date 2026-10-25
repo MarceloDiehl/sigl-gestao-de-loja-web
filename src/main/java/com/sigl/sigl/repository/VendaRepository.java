@@ -26,4 +26,6 @@ public interface VendaRepository extends JpaRepository<Venda, Integer> {
 
     @EntityGraph(attributePaths = {"vendedor", "metodoPagamento", "itens"})
     Optional<Venda> findComItensById(Integer id);
+
+    boolean existsByVendedorId(Integer idVendedor);
 }

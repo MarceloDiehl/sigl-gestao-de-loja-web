@@ -31,8 +31,6 @@ public class ClienteController {
             return new ResponseEntity<>("Cliente cadastrado com sucesso!", HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Erro interno no servidor.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -60,12 +58,8 @@ public class ClienteController {
 
     @DeleteMapping("/{id}")
     public String excluirCliente(@PathVariable Integer id) {
-        try {
-            clienteRepository.deleteById(id);
-            return "Cliente excluído com sucesso!";
-        } catch (Exception e) {
-            return "Erro ao excluir cliente: " + e.getMessage();
-        }
+        clienteService.excluir(id);   // recusas (404) saem como ProblemDetail pelo ValidationHandler
+        return "Cliente excluído com sucesso!";
     }
 
 }

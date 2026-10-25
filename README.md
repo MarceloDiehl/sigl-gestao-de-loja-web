@@ -59,6 +59,7 @@ Sistema web de gestão para a **Orion Record Store**, uma loja de discos, instru
   | Excluir cliente, funcionários     | – | – | ✔ |
 
 - **Dados pessoais (LGPD, princípio da necessidade).** O servidor decide o que cada cargo recebe: o vendedor vê do cliente só nome, contato, cidade e o CPF mascarado (`***.982.247-**`), e busca clientes apenas pelo CPF completo, para que buscas por pedaços não revelem os dígitos ocultos. RG, nascimento, endereço e os dados de funcionários ficam com o gerente. O CPF da nota segue a mesma regra no histórico de vendas.
+- **Exclusões e validações no servidor.** Funcionário com vendas registradas não é excluído (o histórico depende dele), e ninguém exclui o próprio cadastro. CPF repetido, quantidade negativa e valor zero são recusados pelo back-end, mesmo que a tela seja contornada. As recusas saem como `ProblemDetail` (RFC 9457), com o status certo (400, 404, 409) e, quando o problema é de um campo, um mapa `campos` que a tela usa para mostrar a mensagem embaixo do campo.
 - **Banco versionado.** Toda mudança de schema é uma migração do Flyway em `src/main/resources/db/migration`, testada num banco vazio e numa cópia do banco existente antes de ser aplicada.
 - **Tabelas de apoio vindas do banco.** Tipos de produto, condições, cargos, escolaridades, gêneros e formas de pagamento são servidos por `GET /api/apoio`, em vez de ficarem fixos no HTML.
 
@@ -142,7 +143,6 @@ src/main/resources
 
 - Paginação nas listas de estoque, histórico e comunidade
 - Limite de tentativas de login
-- Proteções nas exclusões de clientes e funcionários com vendas
 - Navegação com os botões Voltar e Atualizar do navegador
 - `Dockerfile` e instruções de deploy com HTTPS
 

@@ -1,19 +1,28 @@
 package com.sigl.sigl.controller;
 
+import com.sigl.sigl.exception.RegraDeNegocioException;
 import com.sigl.sigl.model.Funcionario;
+import com.sigl.sigl.model.apoio.Cargo;
 import com.sigl.sigl.repository.FuncionarioRepository;
+import com.sigl.sigl.seguranca.UsuarioLogado;
 import com.sigl.sigl.service.FuncionarioService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -61,5 +70,26 @@ class FuncionarioControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].senha").doesNotExist());
+    }
+
+    private static final UsuarioLogado GERENTE = new UsuarioLogado(2, "g@orion", null, "Gê", "Rente", Cargo.GERENTE, "Gerente");
+
+    @Test
+    @DisplayName("Exclusão passa ao service quem está logado")
+    void excluir_PassaOUsuarioLogado() throws Exception {
+        mockMvc.perform(delete("/api/funcionarios/5").with(csrf()).with(user(GERENTE)))
+                .andExpect(status().isOk());
+        verify(funcionarioService).excluir(5, 2);
+    }
+
+    @Test
+    @DisplayName("Exclusão recusada responde com o status da recusa (não 200) e a mensagem em detail")
+    void excluir_Recusada_DevolveProblemDetail() throws Exception {
+        doThrow(new RegraDeNegocioException(HttpStatus.CONFLICT, "Você não pode excluir o seu próprio cadastro."))
+                .when(funcionarioService).excluir(2, 2);
+
+        mockMvc.perform(delete("/api/funcionarios/2").with(csrf()).with(user(GERENTE)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Você não pode excluir o seu próprio cadastro."));
     }
 }

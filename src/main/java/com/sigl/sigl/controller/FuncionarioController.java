@@ -3,10 +3,12 @@ package com.sigl.sigl.controller;
 import com.sigl.sigl.dto.FuncionarioResposta;
 import com.sigl.sigl.model.Funcionario;
 import com.sigl.sigl.repository.FuncionarioRepository;
+import com.sigl.sigl.seguranca.UsuarioLogado;
 import com.sigl.sigl.service.FuncionarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,8 +31,6 @@ public class FuncionarioController {
             return new ResponseEntity<>("Funcionário cadastrado com sucesso!", HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>("Erro ao cadastrar funcionário: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -43,13 +43,10 @@ public class FuncionarioController {
     }
 
     @DeleteMapping("/{id}")
-    public String excluirFuncionario(@PathVariable Integer id) {
-        try {
-            funcionarioRepository.deleteById(id);
-            return "Funcionário excluído com sucesso!";
-        } catch (Exception e) {
-            return "Erro ao excluir funcionário: " + e.getMessage();
-        }
+    public String excluirFuncionario(@PathVariable Integer id, @AuthenticationPrincipal UsuarioLogado usuario) {
+        // recusas (404, 409) saem como ProblemDetail pelo ValidationHandler
+        funcionarioService.excluir(id, usuario.getId());
+        return "Funcionário excluído com sucesso!";
     }
 }
 
